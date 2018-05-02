@@ -1,0 +1,2 @@
+﻿echo.obj : error LNK2019: unresolved external symbol _inet_pton referenced in function _main
+C:\Users\mike\Documents\GitHub\echo_server\win32\Debug\echo_server.exe : fatal error LNK1120: 1 unresolved externals
