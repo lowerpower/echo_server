@@ -1,11 +1,10 @@
-# udpsend
-udp packet sender command line client
+# Echo Server 
+Simple Echo Server that allows bind address, daemonize, external on/off control, multiple onnections.
 
-This is a simple command line udp packet sender.   It allows the sending of UDP unicast and broadcast packets.
 
 # Usage
 ```
-usage: ./udpsend [-p port] [-h host] [-v(erbose)] [-b(roadcast)] [-?(this message)] message to send
+usage: ./echo_server [-p port] [-h host] [-v(erbose)] [-b(roadcast)] [-?(this message)] message to send
         Defaults port=1024, host=127.0.0.1, verbose off, broadcast off
 ```
 

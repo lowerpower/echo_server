@@ -10,6 +10,8 @@
 // (c)2001 Mycal Labs, All Rights Reserved									-
 //---------------------------------------------------------------------------
 
+#define yprintf printf
+
 #if defined(WEB_PROXY)
 #define DEBUG_LV0	1
 #else
