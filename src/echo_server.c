@@ -28,28 +28,6 @@ int global_flag=0;
 int go=0;
 
 
-//
-// network_init()-
-// If anything needs to be initialized before using the network, put it here, mostly this
-//  is for windows.
-//
-int network_init(void)
-{
-#if defined(WIN32) || defined(WINCE)
-
-    WSADATA w;                              /* Used to open Windows connection */
-    /* Open windows connection */
-    if (WSAStartup(0x0101, &w) != 0)
-    {
-        fprintf(stderr, "Could not open Windows connection.\n");
-        printf("**** Could not initialize Winsock.\n");
-        exit(0);
-    }
-
-#endif
-return(0);
-}
-
 
 int
 init_server(ECHO *echo)
@@ -69,7 +47,7 @@ init_server(ECHO *echo)
     memset((void *)&client, '\0', sizeof(struct sockaddr_in));
     client.sin_family       = AF_INET;                                  // host byte order
     client.sin_port         = htons(echo->listen_port);                 // listen port
-    client.sin_addr.s_addr  = echo->Bind_IP.ip32;                       // client.sin_addr.s_addr
+    client.sin_addr.s_addr  = echo->bind_IP.ip32;                       // client.sin_addr.s_addr
     ret=bind(echo->listen_soc, (struct sockaddr *)&client, sizeof(struct sockaddr_in));
     if(ret==-1)
     {
@@ -132,7 +110,6 @@ BOOL WINAPI ConsoleHandler(DWORD CEvent)
 void
 termination_handler (int signum)
 {
-
     go=0;
 
     if((SIGFPE==signum) || (SIGSEGV==signum) || (11==signum))
@@ -171,25 +148,85 @@ void usage(int argc, char **argv)
   exit(2);
 }
 
+// close and cleanup a socket
+int
+cleanup_socket(ECHO *echo, ECHO_CONNECTION *ec)
+{
+	int ret = 0;
+	int extracted = 0;
+	ECHO_CONNECTION *tec;
 
+	tec = echo->connections;
+	// first extract the connection from the list
+	if ((tec) && (ec))
+	{
+		if (tec == ec)
+		{
+			// easy, at the head of the list
+			echo->connections = ec->next;
+			extracted = 1;
+		}
+		else
+		{
+			// lets search through the list to remove the connection
+			while (tec->next)
+			{
+				if (tec->next == ec)
+				{
+					// found, remove
+					tec->next = ec->next;
+					extracted = 1;
+					break;
+				}
+				tec = tec->next;
+			}
+		}
+		if (extracted)
+		{
+			// clean up
+			Y_Del_Select_rx(ec->soc);
+			closesocket(ec->soc);
+			free(ec);
+			ret = 1;
+			echo->connection_count--;
+			if (echo->connection_count < 0)
+				printf("Error: connection count <0\n");
+		}
+		else
+		{
+			printf("cleanup_socket: nothing to remove, do nothing.\n");
+		}
+	}
+	else
+	{
+		printf("cleanup_socket: input is invalid, do nothing.\n");
+	}
+	return(ret);
+}
 
-int main() {
+int main(int argc, char **argv) {
   struct sockaddr_in bind_addr;
   struct sockaddr peer_addr;
-  int optval = 1;
-  int tcp_socket,client_fd;
+  int c,optval = 1;
   int err;
   unsigned int addr_len = sizeof(struct sockaddr);
   char buf[BUFFER_SIZE];
+  ECHO echo;
 
  
   //
   // Banner
   startup_banner();
-
+  //
   // Startup Network
   network_init();
-  Y_Init_Select();
+  Y_Init_Select();												// were going to use the select engine
+  //
+  // Set defaults
+  memset(&echo, 0, sizeof(ECHO));
+  echo.listen_port	= ECHO_DEFALT_LISTEN_PORT;					// echo service defaults to port 7 (must be root) or make over 1024
+  echo.bind_IP.ip32 = 0;
+
 
   //------------------------------------------------------------------
   // Initialize error handling and signals
@@ -236,12 +273,24 @@ if (SetConsoleCtrlHandler((PHANDLER_ROUTINE)ConsoleHandler,TRUE)==FALSE)
                 break;
             case 'd':
                 // Startup as daemon with pid file
-                strncpy(echo.pidfile,optarg,MAX_PATH-1);
-                printf("Starting up as daemon with pidfile %s\n",echo.pidfile);
+                if(0!=optarg)
+                {
+                    strncpy(echo.pidfile,optarg,MAX_PATH-1);
+                    printf("Starting up as daemon with pidfile %s\n",echo.pidfile);
+                }
+                else
+                {
+                    printf("Starting up as daemon with no pidfile.\n");
+                    echo.pidfile[0]=0;
+                }
                 global_flag|=GF_DAEMON;
+            
                 break;
+            case 'p':
+                // Override Port
+                echo.listen_port=atoi(optarg);
             case 'v':
-                echo.verbose=1;
+                echo.verbose++;
                 break;
             case 'h':
                 usage (argc,argv);
@@ -257,10 +306,6 @@ if (SetConsoleCtrlHandler((PHANDLER_ROUTINE)ConsoleHandler,TRUE)==FALSE)
     //
 
 
-
-
-
-
 #if !defined(WIN32)
     //
     // Should Daemonize here,  
@@ -271,66 +316,176 @@ if (SetConsoleCtrlHandler((PHANDLER_ROUTINE)ConsoleHandler,TRUE)==FALSE)
         daemonize(echo.pidfile,0,0,0,0,0,0);
         // Setup logging
         openlog("chat_server",LOG_PID|LOG_CONS,LOG_USER);
-        syslog(LOG_INFO,Echo Server built "__DATE__ " at " __TIME__ "\n");
-        syslog(LOG_INFO,"   Version " VERSION " - (c)2018 Remot3.it\n");
+        syslog(LOG_INFO,"Echo Server built "__DATE__ " at " __TIME__ "\n");
+        syslog(LOG_INFO,"   Version " VERSION " - (c)2018 mycal.net\n");
         syslog(LOG_INFO,"Starting up as daemon\n");
     }
 #endif
 
 
-
-
-
   memset(&bind_addr, 0, sizeof(struct sockaddr_in));
   memset(&peer_addr, 0, sizeof(struct sockaddr));
   bind_addr.sin_family = AF_INET;
-  bind_addr.sin_port = htons(53);
-
-  if (inet_pton(AF_INET, "0.0.0.0", &(bind_addr.sin_addr)) != 1) {
-    perror("inet_pton");
-    exit(1);
-  }
-
-  tcp_socket = socket(AF_INET, SOCK_STREAM, 0);
-  setsockopt(tcp_socket, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
-  err = bind(tcp_socket, (const struct sockaddr *)&bind_addr, sizeof(struct sockaddr));
+  //bind_addr.sin_port = htons(53);
+  //
+  // Set bind address
+  //
+  bind_addr.sin_port = htons(echo.listen_port);
+  bind_addr.sin_addr.S_un.S_addr = echo.bind_IP.ip32;
+  //
+  // reuse the address and bind the socket to the echo port
+  //
+  echo.listen_soc = socket(AF_INET, SOCK_STREAM, 0);
+  setsockopt(echo.listen_soc, SOL_SOCKET, SO_REUSEADDR, (char*)&optval, sizeof(optval));
+  err = bind(echo.listen_soc, (const struct sockaddr *)&bind_addr, sizeof(struct sockaddr));
 
   if (err != 0) {
     perror("bind failed");
     exit(1);
   }
-
-  err = listen(tcp_socket, 256);
+  //
+  // Listen on the port for TCP sockets
+  //
+  err = listen(echo.listen_soc, ECHO_LISTEN_BACKLOG);
   if (err != 0) {
     perror("listen failed");
     exit(1);
   }
 
-    printf("echo started up on port %d\n",htons(bind_addr.sin_port)); 
+  // add the listen socket to select for rx
+  Y_Set_Select_rx(echo.listen_soc);
+
+  printf("echo started up on port %d\n",htons(bind_addr.sin_port)); 
 
   // This code only accepts one socket at a time
-  while (1) {
-	memset((void *)&peer_addr, '\0', sizeof(struct sockaddr_in));
-  	client_fd=accept(tcp_socket, &peer_addr, &addr_len);
-	
-	if(client_fd<0) 
-	{
-		continue;
-	}
+  while (1)
+  {
+	  int sc;
+	  int process_count;
+	  ECHO_CONNECTION *ec;
 
-	while(1)
-	{
-      int read = recv(client_fd, buf, BUFFER_SIZE, 0);
+	  // wait for event or timeout (500ms)
+	  sc = Y_Select(500);
 
-      if (!read) break; // done reading
-      if (read < 0) on_error("Client read failed\n");
+	  process_count = 0;
+	  // if sc > 0 we have some action on a socket
+	  if (sc > 0)
+	  {
+		  // check the listen socket
+		  while (Y_Is_Select(echo.listen_soc))
+		  {
+			  // should we accept this socket?
+			  if (ECHO_MAX_CONNECTIONS <= echo.connection_count)
+			  {
+				  // we cannot accept, do nothing for now this will increase the backlog, threadswitch to not hammer CPU 
+				  // may need  usleep(10) or not select on listen socket until the backlog clears.
+				  threadswitch();
+				  if (echo.verbose) printf("accept: Over maximum concurrent connections of %d\n", ECHO_MAX_CONNECTIONS);
+				  // exit listen_soc select
+				  break;
+			  }
+			  // Try to accept here, create a new echo connection structure
+			  ec = (ECHO_CONNECTION *)malloc(sizeof(ECHO_CONNECTION));
+			  // of we have a structure,lets accept the socket
+			  if (ec)
+			  {
+				  struct sockaddr_in  peer;
+				  int				  peer_len = sizeof(struct sockaddr);
 
-      err = send(client_fd, buf, read, 0);
-      if (err < 0) on_error("Client write failed\n");		
-	}
+				  // we are going to use ec lets clear it first
+				  memset(ec, 0, sizeof(ECHO_CONNECTION));
+				  // accept the socket
+				  ec->soc = accept(echo.listen_soc, (struct sockaddr *)&peer, &peer_len);
+				  // check if accept was sucessful
+				  if (ec->soc >= 0)
+				  {
+					  echo.connection_count++;
+					  if (echo.verbose) printf("accept: socket %d, at %d concurrent connections\n",ec->soc, echo.connection_count);
+					  // set the peer endpoint in case we want to list it
+					  ec->peer_ip.ip32 = peer.sin_addr.S_un.S_addr;
+					  ec->peer_port = htons(peer.sin_port);
+					  //
+					  if (echo.verbose) printf("accept: socket %d from %s:%d, at %d concurrent connections\n", ec->soc, inet_ntoa(peer.sin_addr),
+															ec->peer_port, echo.connection_count);
+					  // add it to select for read (maybe write later)
+					  Y_Set_Select_rx(ec->soc);
+					  // add it to the list
+					  ec->next = echo.connections;
+					  echo.connections = ec;
+					  process_count++;
+					  if (process_count >= sc)
+						  break;
+				  }
+				  else
+				  {
+					  // no accept free
+					  free(ec);
+					  break;
+				  }
+			  }
+			  else
+			  {
+				  // malloc failed
+				  printf("malloc failed cannot accept a connection\n");
+				  break;
+			  }
+			  // see if there are more to accept
+		  }
+		  //
+		  // process the rest of the sockets
+		  //
+		  ec = echo.connections;
+		  while (ec)
+		  {
+			  ECHO_CONNECTION *current_connection=ec;
+			  
+			  // setup the next connection, we will use current_connection for all operations below
+			  ec = ec->next;
+			  // may save small amount of CPU on large lists if we bail after processing a number of connections
+			  // that select said we had to process
+			  if (process_count >= sc)
+				  break;
+			  // check if select
+			  if (Y_Is_Select(current_connection->soc))
+			  {
+				  // try to read
+				  int read = recv(current_connection->soc, buf, BUFFER_SIZE, 0);
+				  process_count++;
+				  if (0 == read)
+				  {
+					  if (echo.verbose) printf("socket %d from %s:%d, closed buy peer.\n", current_connection->soc,inet_ntoa(*(struct in_addr *)&current_connection->peer_ip.ip32),
+							current_connection->peer_port);
+					  cleanup_socket(&echo, current_connection);
+					  if (echo.verbose) printf("at concurrent socket count of %d\n", echo.connection_count);
+				  }else
+				  if (read < 0) {
+					  if (echo.verbose) printf("socket %d from %s:%d, read error closed\n", current_connection->soc, inet_ntoa(*(struct in_addr *)&current_connection->peer_ip.ip32),
+						  current_connection->peer_port);
+					  cleanup_socket(&echo, current_connection);
+					  if (echo.verbose) printf("at concurrent socket count of %d\n", echo.connection_count);
+				  }
+				  else
+				  {
+					  int err;
+					  err = send(current_connection->soc, buf, read, 0);
+					  if (err < 0) {
+						  // we should really check for wouldblock and queue the packet and wait on select for writable
+						  // but for now we just kill the socket
+						  if (echo.verbose) printf("socket %d from %s:%d, write error closed\n", current_connection->soc, inet_ntoa(*(struct in_addr *)&current_connection->peer_ip.ip32),
+							  current_connection->peer_port);
+						  cleanup_socket(&echo, current_connection);
+						  if (echo.verbose) printf("at concurrent socket count of %d\n", echo.connection_count);
+					  }
+				  }
+			  }
+		  }
+	  }
+	  else
+	  {
+		  // timeout, any timout processing here
+	  }
+	  // any background processing here
   }
-
-
 }
 
 

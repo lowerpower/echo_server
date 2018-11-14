@@ -86,7 +86,7 @@ Y_Del_Select_tx(SOCKET sock)
 S16
 Y_Is_Select(SOCKET sock)
 {
-    S16 ret;
+    S16 ret=0;
 
     if(FD_ISSET(sock,&fd_rx_list))
         ret=1;
@@ -116,7 +116,7 @@ Y_set_fd_max(int max)
 int
 Y_Select(int timeout)
 {
-    int ret;
+    int ret=0;
     int seconds=0;
     int useconds=0;
     struct timeval		tv;

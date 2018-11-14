@@ -43,12 +43,13 @@
 #define _MT 
 #endif 
 //#ifndef  WIN32_LEAN_AND_MEAN 
-#include <winsock.h>
+//#include <winsock.h>
+#include <winsock2.h>
 #include <windows.h>
 
 #include <process.h>    /* _beginthread, _endthread */
 
-//#include <winsock2.h>
+#include <winsock2.h>
 #include <stdlib.h>
 #include <conio.h>
 #include <io.h>
@@ -73,20 +74,25 @@
 
 #include <crtdbg.h>
 
+#pragma comment(lib, "ws2_32.lib")
+
 // Winsock fix
 #define MSG_WAITALL 0x8 
 
 //#define FD_SETSIZE 512
 
 // Unix some winsock errors
+/*
 #define EWOULDBLOCK		WSAEWOULDBLOCK
 #define EINPROGRESS		WSAEINPROGRESS
 #define EALREADY		WSAEALREADY
 #define EINVAL			WSAEINVAL
 #define EISCONN			WSAEISCONN
 #define ENOTCONN		WSAENOTCONN
+*/
 
 #define usleep			Sleep
+#define	close			_close
 
 #if defined(ZAVIO)
 #define openlog(...) //	

@@ -37,7 +37,7 @@ LINKFLAGS	= -o
 DEPENDALL	=  
 
 #Objects put all your .c files here but with .o extentions
-OBJ	= echo.o
+OBJ	= echo_server.o yselect.o daemonize.o arch.o
 
 $(EXEC): $(OBJ) $(DEPENDALL) 
 	$(CC) $(LINKFLAGS) $(EXEC) $(OBJ) $(LIBS)

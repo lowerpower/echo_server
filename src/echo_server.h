@@ -15,6 +15,7 @@
 
 #define ECHO_LISTEN_BACKLOG       10
 #define ECHO_DEFALT_LISTEN_PORT   7 
+#define ECHO_MAX_CONNECTIONS	  255
 
 
 
@@ -26,10 +27,19 @@
 #define GF_QUIET        0x04                /* no output */
 
 
+typedef struct echo_connection_
+{
+	SOCKET      soc;
+	IPADDR		peer_ip;
+	U16			peer_port;
+	struct echo_connection_ *next;
+}ECHO_CONNECTION;
+
+
 // Custom File config for each product here
 typedef struct echo_config_
 {
-    IPADDR      Bind_IP;
+    IPADDR		bind_IP;
     U16         listen_port;
     SOCKET      listen_soc;
     //
@@ -39,6 +49,8 @@ typedef struct echo_config_
 	int			accept_on;
 	int			connection_count;
     //
+	// simple lists of connections, could be more effecent
+	struct echo_connection_ *connections;
 
     // Stats
     //char        stats_file[MAX_PATH];

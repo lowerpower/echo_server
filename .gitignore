@@ -41,3 +41,60 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.sdf
+*.sln
+*.suo
+
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+vendor/
+
+# User-specific files (MonoDevelop/Xamarin Studio)
+*.userprefs
+
+#
+cmake-build-debug
+build/
+.idea/
+backup/
+
+## Obj-C/Swift specific
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Visual C++ cache files
+ipch/
+*.ipch
+*.aps
+*.ncb
+*.opensdf
+*.sdf
+*.cachefile
+
+# Visual Studio profiler
+*.psess
+*.vsp
+*.vspx
+
+*.VisualState.xml
+TestResult.xml
+
