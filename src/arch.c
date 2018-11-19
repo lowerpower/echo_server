@@ -474,7 +474,7 @@ get_mac_address(U8 *adapter, U8 *macaddr)
 
 	fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
 
-	strcpy(if_hwaddr.ifr_name,adapter);
+	strcpy(if_hwaddr.ifr_name,(char*)adapter);
 	/* Get the vitals from the master interface. */
 	if (ioctl(fd, SIOCGIFHWADDR, &if_hwaddr) < 0) 
 	{
@@ -650,7 +650,7 @@ int NetConnect1(const char *pcServer, unsigned short usPort, int iMillSecTimeout
 			if (FD_ISSET(fd, &fdsWrite) || FD_ISSET(fd, &fdsRead))
 			{
 				int iErrorCode;
-				int iErrorCodeLen = sizeof(iErrorCode);
+				socklen_t iErrorCodeLen = sizeof(iErrorCode);
 				if (getsockopt(fd, SOL_SOCKET, SO_ERROR, (char *)&iErrorCode, &iErrorCodeLen) == 0)
 				{
 					if (iErrorCode == 0)

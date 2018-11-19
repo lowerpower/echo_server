@@ -17,6 +17,17 @@
 
 #define _CRT_SECURE_NO_WARNINGS 1
 
+#if defined __APPLE__
+#include <TargetConditionals.h>
+#if defined (TARGET_OS_IPHONE)
+#define OSX 1
+#endif
+#define MACOSX 1
+#endif
+
+#if defined __linux__
+#define LINUX 1
+#endif
 
 // Don't include malloc for the MAC
 #if defined(LINUX) || defined(WIN32) 

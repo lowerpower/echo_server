@@ -1,0 +1,13 @@
+#
+# Script to build system bin
+#
+
+exe_base="echo_server"
+
+
+cd src
+
+# Make system
+make -f makefile.generic clean
+make -f makefile.generic SHARED=yes EXEC=${exe_base}
+

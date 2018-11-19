@@ -2,7 +2,7 @@
 # Script to build all bins in weaved build system, assumes tools in /opt
 #
 
-exe_base="echo"
+exe_base="echo_server"
 
 cd src
 

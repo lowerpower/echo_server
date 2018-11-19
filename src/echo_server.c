@@ -209,7 +209,6 @@ int main(int argc, char **argv) {
   struct sockaddr peer_addr;
   int c,optval = 1;
   int err;
-  unsigned int addr_len = sizeof(struct sockaddr);
   char buf[BUFFER_SIZE];
   ECHO echo;
 
@@ -331,7 +330,7 @@ if (SetConsoleCtrlHandler((PHANDLER_ROUTINE)ConsoleHandler,TRUE)==FALSE)
   // Set bind address
   //
   bind_addr.sin_port = htons(echo.listen_port);
-  bind_addr.sin_addr.S_un.S_addr = echo.bind_IP.ip32;
+  bind_addr.sin_addr.s_addr = echo.bind_IP.ip32;
   //
   // reuse the address and bind the socket to the echo port
   //
@@ -390,7 +389,7 @@ if (SetConsoleCtrlHandler((PHANDLER_ROUTINE)ConsoleHandler,TRUE)==FALSE)
 			  if (ec)
 			  {
 				  struct sockaddr_in  peer;
-				  int				  peer_len = sizeof(struct sockaddr);
+				  socklen_t 		  peer_len = sizeof(struct sockaddr);
 
 				  // we are going to use ec lets clear it first
 				  memset(ec, 0, sizeof(ECHO_CONNECTION));
@@ -402,7 +401,7 @@ if (SetConsoleCtrlHandler((PHANDLER_ROUTINE)ConsoleHandler,TRUE)==FALSE)
 					  echo.connection_count++;
 					  if (echo.verbose) printf("accept: socket %d, at %d concurrent connections\n",ec->soc, echo.connection_count);
 					  // set the peer endpoint in case we want to list it
-					  ec->peer_ip.ip32 = peer.sin_addr.S_un.S_addr;
+					  ec->peer_ip.ip32 = peer.sin_addr.s_addr;
 					  ec->peer_port = htons(peer.sin_port);
 					  //
 					  if (echo.verbose) printf("accept: socket %d from %s:%d, at %d concurrent connections\n", ec->soc, inet_ntoa(peer.sin_addr),
