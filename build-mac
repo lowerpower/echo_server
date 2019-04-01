@@ -1,0 +1,23 @@
+#
+# Script to build system bin
+#
+
+exe_base="echo_server.osx"
+
+
+cd src
+CC=/opt/osx-mac/bin/x86_64-apple-darwin15-cc
+STRIP=/opt/osx-mac/bin/x86_64h-apple-darwin15-strip
+BASEDIR=/opt/osx-mac/SDK/MacOSX10.11.sdk
+ARCH="-mmacosx-version-min=10.5 -arch x86_64"
+
+# Make system
+#`:w
+
+make -f makefile clean
+make -f makefile SHARED=no CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR EXEC=${exe_base}
+#make -f makefile SHARED=no CC=$CC STRIP=$STRIP BASEDIR=$BASEDIR ARCH=$ARCH EXEC=${exe_base}
+
+
+
+
