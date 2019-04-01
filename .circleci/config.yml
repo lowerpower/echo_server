@@ -1,0 +1,25 @@
+version: 2.1
+
+executors:
+  ubuntu:
+    docker:
+        - image: gcc:latest
+
+workflows:
+    version: 2
+    all:
+        jobs:
+            -build
+
+jobs:
+  build:
+    executor: ubuntu
+    working_directory: ~/src
+    steps:
+        - checkout
+        - run: make
+        - store_artifacts:
+            path: ~/project/build
+
+
+
