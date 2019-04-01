@@ -13,9 +13,9 @@
 #include "mytypes.h"
 
 
-#define ECHO_LISTEN_BACKLOG       10
+#define ECHO_LISTEN_BACKLOG       20
 #define ECHO_DEFALT_LISTEN_PORT   7 
-#define ECHO_MAX_CONNECTIONS	  255
+#define ECHO_MAX_CONNECTIONS	  513
 
 
 
