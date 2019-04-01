@@ -1,7 +1,7 @@
 /*!																www.mycal.com			
  *---------------------------------------------------------------------------
- *! \file yoics_arch.c
- *  \brief Platform dependent code for yoics system, contains abstaracted 
+ *! \file arch.c
+ *  \brief Platform dependent code for, contains abstaracted 
  *		patform independent interface interface.
  *																			
  *---------------------------------------------------------------------------
@@ -12,7 +12,7 @@
  * Version                                                                  -
  * 0.1 Original Version August 31, 2006     							    -
  *																			-
- * (c)2006 Yoics Inc. All Rights Reserved									-
+ * (c)2006 mycal.net  All Rights Reserved									-
  *---------------------------------------------------------------------------
  *
  */
